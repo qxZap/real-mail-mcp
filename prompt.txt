@@ -1,4 +1,4 @@
-You have access to an email-server MCP that allows managing emails via Gmail using SMTP for sending and IMAP for reading. The send_email tool supports rich HTML formatting for complex emails with colors, fonts, sizes, links, lists, tables, etc. Use inline styles (style="...") for compatibility across email clients like Gmail, Outlook.
+You have access to an email-server MCP that allows managing emails via Gmail using SMTP for sending and IMAP for reading. The send_email tool supports rich HTML formatting for complex emails with colors, fonts, sizes, links, lists, tables, etc. Use inline styles (style="...") for compatibility across email clients like Gmail, Outlook. New tools added for forwarding, replying, and accessing sent emails.
 
 To use it, run the server with: fastmcp run server.py
 
@@ -45,26 +45,33 @@ Available tools:
        """
      - Note: Test rendering in target email clients. Avoid complex JS or external resources.
 
-2. get_emails(limit: int = 10, start: int = 0, unread_only: bool = False)
-   - Retrieves recent emails from inbox. For HTML emails, body preview strips tags for text view.
+2. get_emails(folder: str = 'inbox', limit: int = 10, start: int = 0, unread_only: bool = False)
+   - Retrieves recent emails from specified folder (e.g., 'inbox' or '[Gmail]/Sent Mail' for sent emails). For HTML emails, body preview strips tags for text view.
+   - 'folder': Folder to fetch from (str, default 'inbox')
    - 'limit': Max number of emails to fetch (int, default 10)
    - 'start': Offset to start from (int, default 0)
    - 'unread_only': Fetch only unread emails (bool, default False)
-   - Returns: List of dicts with {'id': str, 'subject': str, 'from': str, 'date': str, 'body': str (truncated text preview)}
+   - Returns: List of dicts with {'id': str, 'subject': str, 'from': str, 'to': str, 'date': str, 'body': str (truncated text preview)}
 
-3. get_unread_count()
-   - Gets the number of unread emails in inbox.
+3. get_unread_count(folder: str = 'inbox')
+   - Gets the number of unread emails in specified folder.
+   - 'folder': Folder to check (str, default 'inbox')
    - Returns: Integer count or error message.
 
-4. delete_email(email_id: str)
-   - Deletes the email with the given ID.
+4. delete_email(email_id: str, folder: str = 'inbox')
+   - Deletes the email with the given ID from specified folder.
    - 'email_id': The email ID from get_emails (str)
-   - Returns: "Email sent successfully" or error message.
+   - 'folder': Folder to delete from (str, default 'inbox')
+   - Returns: "Email deleted successfully" or error message.
    - WARNING: This permanently deletes the email.
 
-5. search_emails(keywords: list)
-   - Searches emails for the given keywords in body.
+5. search_emails(keywords: list, date_from: str = None, date_to: str = None, sender: str = None, folder: str = 'inbox')
+   - Searches emails for the given keywords in body, with optional date range, sender, and folder.
    - 'keywords': List of strings to search for (list of str)
+   - 'date_from': Start date e.g., '01-Jan-2024' (str, optional)
+   - 'date_to': End date e.g., '31-Dec-2024' (str, optional)
+   - 'sender': Sender email or name (str, optional)
+   - 'folder': Folder to search in (str, default 'inbox')
    - Returns: List of dicts with {'id': str, 'subject': str, 'from': str} (top 10 matches)
 
 6. create_label(label_name: str)
@@ -77,8 +84,35 @@ Available tools:
    - 'label_name': Name of the label (str)
    - Returns: Confirmation message.
 
-8. add_label_to_email(email_id: str, label_name: str)
-   - Adds a label to an email (limited IMAP support; sets flag, not true label. Full support needs Gmail API).
+8. add_label_to_email(email_id: str, label_name: str, folder: str = 'inbox')
+   - Adds a label to an email from specified folder (limited IMAP support; sets flag, not true label. Full support needs Gmail API).
    - 'email_id': The email ID (str)
    - 'label_name': Name of the label (str)
+   - 'folder': Folder of the email (str, default 'inbox')
    - Returns: Confirmation or error.
+
+9. forward_email(email_id: str, to: str, custom_subject: str = None, custom_body_prefix: str = None, is_html: bool = False, folder: str = 'inbox')
+   - Forwards an email to a new recipient from specified folder, with optional custom prefix and subject.
+   - 'email_id': ID of email to forward (str)
+   - 'to': New recipient (str)
+   - 'custom_subject': Optional new subject (str)
+   - 'custom_body_prefix': Optional text/HTML before original (str)
+   - 'is_html': Treat prefix as HTML (bool, default False)
+   - 'folder': Folder of original email (str, default 'inbox')
+   - Returns: "Email forwarded successfully" or error.
+
+10. reply_to_email(email_id: str, reply_body: str, is_html: bool = False, subject_prefix: str = "Re:", folder: str = 'inbox')
+    - Replies to an email from specified folder.
+    - 'email_id': ID of email to reply to (str)
+    - 'reply_body': Reply content (str)
+    - 'is_html': Treat as HTML (bool, default False)
+    - 'subject_prefix': Subject prefix (str, default "Re:")
+    - 'folder': Folder of original email (str, default 'inbox')
+    - Returns: "Reply sent successfully" or error.
+
+Notes:
+- Use folder='[Gmail]/Sent Mail' to access sent emails.
+- Date formats for search: DD-MMM-YYYY (e.g., 19-Feb-2026).
+- Credentials are loaded from .env (SMTP_USER, SMTP_PASS, etc.).
+- IMAP uses Gmail's server; ensure app password is used for SMTP_PASS.
+- Labels have limited functionality without Gmail API integration.
