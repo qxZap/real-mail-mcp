@@ -8,7 +8,7 @@ from email import encoders
 import imaplib
 import email as email_parser
 from dotenv import load_dotenv
-from fastmcp import Server, tool
+from fastmcp import FastMCP
 
 load_dotenv()
 
@@ -21,9 +21,9 @@ SMTP_FROM = os.getenv('SMTP_FROM')
 IMAP_HOST = 'imap.gmail.com'
 IMAP_PORT = 993
 
-server = Server("email-server")
+mcp = FastMCP("email-server")
 
-@tool
+@mcp.tool
 async def send_email(to: str, subject: str, body: str, is_html: bool = False, attachments: list = None):
     """
     Send an email using SMTP. Supports HTML formatting for complex layouts, colors, fonts, etc.
@@ -73,7 +73,7 @@ async def send_email(to: str, subject: str, body: str, is_html: bool = False, at
     except Exception as e:
         return f"Failed to send email: {str(e)}"
 
-@tool
+@mcp.tool
 async def get_emails(limit: int = 10, start: int = 0, unread_only: bool = False):
     """
     Retrieve emails from inbox.
@@ -149,7 +149,7 @@ async def get_emails(limit: int = 10, start: int = 0, unread_only: bool = False)
     except Exception as e:
         return f"Failed to retrieve emails: {str(e)}"
 
-@tool
+@mcp.tool
 async def get_unread_count():
     """
     Get the number of unread emails in inbox.
@@ -168,7 +168,7 @@ async def get_unread_count():
     except Exception as e:
         return f"Failed to get unread count: {str(e)}"
 
-@tool
+@mcp.tool
 async def delete_email(email_id: str):
     """
     Delete an email by ID.
@@ -190,7 +190,7 @@ async def delete_email(email_id: str):
     except Exception as e:
         return f"Failed to delete email: {str(e)}"
 
-@tool
+@mcp.tool
 async def search_emails(keywords: list):
     """
     Search emails for keywords.
@@ -237,7 +237,7 @@ async def search_emails(keywords: list):
     except Exception as e:
         return f"Failed to search emails: {str(e)}"
 
-@tool
+@mcp.tool
 async def create_label(label_name: str):
     """
     Create a Gmail label (category).
@@ -248,7 +248,7 @@ async def create_label(label_name: str):
     # Note: Creating labels requires Gmail API, not IMAP. For simplicity, placeholder.
     return f"Label '{label_name}' created. (Note: Full implementation requires Gmail API)"
 
-@tool
+@mcp.tool
 async def delete_label(label_name: str):
     """
     Delete a Gmail label.
@@ -258,7 +258,7 @@ async def delete_label(label_name: str):
     """
     return f"Label '{label_name}' deleted. (Note: Full implementation requires Gmail API)"
 
-@tool
+@mcp.tool
 async def add_label_to_email(email_id: str, label_name: str):
     """
     Add a label to an email.
@@ -283,4 +283,4 @@ async def add_label_to_email(email_id: str, label_name: str):
         return f"Failed to add label: {str(e)}"
 
 if __name__ == "__main__":
-    server.run(transport="stdio")
+    mcp.run(transport="stdio")
