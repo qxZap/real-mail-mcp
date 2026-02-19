@@ -11,6 +11,9 @@ from dotenv import load_dotenv
 from fastmcp import FastMCP
 from datetime import datetime
 import re
+import webbrowser
+import tempfile
+import threading
 
 load_dotenv()
 
@@ -28,7 +31,7 @@ mcp = FastMCP("email-server")
 @mcp.tool
 async def send_email(to: str, subject: str, body: str, is_html: bool = False, attachments: list = None):
     """
-    Send an email using SMTP. Supports HTML formatting for complex layouts, colors, fonts, etc.
+    Send an email using SMTP. Supports HTML formatting for complex layouts, colors, fonts, etc. After sending, opens a temporary HTML file in the default browser for review and schedules deletion after 5 minutes.
     
     Args:
         to: Recipient email address
@@ -71,7 +74,40 @@ async def send_email(to: str, subject: str, body: str, is_html: bool = False, at
         text = msg.as_string()
         smtp_server.sendmail(SMTP_FROM, to, text)
         smtp_server.quit()
-        return "Email sent successfully"
+        
+        # Post-send preview: Create temp HTML file and open in browser
+        preview_html = f"""
+        <html>
+        <head><title>Email Preview: {subject}</title></head>
+        <body>
+        <h2>Sent Email Preview</h2>
+        <p><strong>To:</strong> {to}</p>
+        <p><strong>Subject:</strong> {subject}</p>
+        <hr>
+        {body if is_html else f'<pre>{body}</pre>'}
+        </body>
+        </html>
+        """
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as temp_file:
+            temp_file.write(preview_html)
+            temp_path = temp_file.name
+        
+        # Open in default browser
+        webbrowser.open('file://' + os.path.realpath(temp_path))
+        
+        # Schedule deletion after 5 minutes (300 seconds)
+        def delete_temp():
+            try:
+                os.remove(temp_path)
+                print(f"Temporary file {temp_path} deleted after 5 minutes.")
+            except Exception as e:
+                print(f"Error deleting temp file: {e}")
+        
+        timer = threading.Timer(300.0, delete_temp)
+        timer.start()
+        
+        return f"Email sent successfully. Preview opened in browser. File will be deleted in 5 minutes."
     except Exception as e:
         return f"Failed to send email: {str(e)}"
 
@@ -178,7 +214,7 @@ async def get_unread_count(folder: str = 'inbox'):
 @mcp.tool
 async def delete_email(email_id: str, folder: str = 'inbox'):
     """
-    Delete an email by ID from specified folder.
+    Delete an email by ID from specified folder (moves to Trash in Gmail).
     
     Args:
         email_id: The ID of the email to delete (str)
@@ -365,9 +401,39 @@ async def forward_email(email_id: str, to: str, custom_subject: str = None, cust
         smtp_server.sendmail(SMTP_FROM, to, forwarded.as_string())
         smtp_server.quit()
         
+        # Post-forward preview (similar to send_email)
+        preview_html = f"""
+        <html>
+        <head><title>Forwarded Email Preview: {forwarded['Subject']}</title></head>
+        <body>
+        <h2>Forwarded Email Preview</h2>
+        <p><strong>To:</strong> {to}</p>
+        <p><strong>Subject:</strong> {forwarded['Subject']}</p>
+        <hr>
+        {original_as_text}
+        </body>
+        </html>
+        """
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as temp_file:
+            temp_file.write(preview_html)
+            temp_path = temp_file.name
+        
+        webbrowser.open('file://' + os.path.realpath(temp_path))
+        
+        def delete_temp():
+            try:
+                os.remove(temp_path)
+                print(f"Temporary file {temp_path} deleted after 5 minutes.")
+            except Exception as e:
+                print(f"Error deleting temp file: {e}")
+        
+        timer = threading.Timer(300.0, delete_temp)
+        timer.start()
+        
         mail.close()
         mail.logout()
-        return "Email forwarded successfully"
+        return f"Email forwarded successfully. Preview opened in browser. File will be deleted in 5 minutes."
     except Exception as e:
         return f"Failed to forward email from {folder}: {str(e)}"
 
@@ -417,9 +483,39 @@ async def reply_to_email(email_id: str, reply_body: str, is_html: bool = False, 
         smtp_server.sendmail(SMTP_FROM, original_message['From'], reply.as_string())
         smtp_server.quit()
         
+        # Post-reply preview
+        preview_html = f"""
+        <html>
+        <head><title>Reply Email Preview: {reply['Subject']}</title></head>
+        <body>
+        <h2>Reply Email Preview</h2>
+        <p><strong>To:</strong> {reply['To']}</p>
+        <p><strong>Subject:</strong> {reply['Subject']}</p>
+        <hr>
+        {reply_body if is_html else f'<pre>{reply_body}</pre>'}
+        </body>
+        </html>
+        """
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as temp_file:
+            temp_file.write(preview_html)
+            temp_path = temp_file.name
+        
+        webbrowser.open('file://' + os.path.realpath(temp_path))
+        
+        def delete_temp():
+            try:
+                os.remove(temp_path)
+                print(f"Temporary file {temp_path} deleted after 5 minutes.")
+            except Exception as e:
+                print(f"Error deleting temp file: {e}")
+        
+        timer = threading.Timer(300.0, delete_temp)
+        timer.start()
+        
         mail.close()
         mail.logout()
-        return "Reply sent successfully"
+        return f"Reply sent successfully. Preview opened in browser. File will be deleted in 5 minutes."
     except Exception as e:
         return f"Failed to send reply from {folder}: {str(e)}"
 
