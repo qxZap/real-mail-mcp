@@ -1,0 +1,92 @@
+You have access to an email-server MCP that allows managing emails via Gmail using SMTP for sending and IMAP for reading. The send_email tool supports rich HTML formatting for complex emails with colors, fonts, sizes, links, lists, tables, etc. Use inline styles (style="...") for compatibility across email clients like Gmail, Outlook.
+
+To use it, run the server with: fastmcp run server.py
+
+Available tools:
+
+1. send_email(to: str, subject: str, body: str, is_html: bool = False, attachments: list = None)
+   - Sends an email to the specified recipient. When is_html=True, the body can contain full HTML for advanced formatting. Always include a plain text fallback for accessibility.
+   - 'to': Recipient email address (str)
+   - 'subject': Email subject (str)
+   - 'body': Email body text (plain or HTML) (str)
+   - 'is_html': If True, body is parsed as HTML (supports inline styles like style="color: red; font-size: 24px; font-weight: bold;", <h1>, <strong>, <em>, <ul>, <ol>, <a href="">, <img src="cid:..."> for attachments, <table>, <div>, etc.) (bool, default False)
+   - 'attachments': List of file paths to attach (list of str, optional). For embedded images in HTML, attach the image and reference with <img src="cid:filename">; set Content-ID in attachment.
+   - Returns: "Email sent successfully" or error message.
+   - Formatting Tips:
+     - Use inline CSS only (no external stylesheets).
+     - Common styles: color (e.g., #FF0000 or red), font-size (px or em), font-family (sans-serif, Arial), background-color, text-align, padding, margin.
+     - Structure: Wrap in <html><body> for best rendering.
+     - Examples:
+       - Bold large blue header: <h1 style="color: blue; font-size: 32px; text-align: center;">Welcome!</h1>
+       - Colored paragraph: <p style="color: green; font-size: 18px;">This is green and larger text.</p>
+       - List: <ul style="list-style-type: circle;"><li style="color: purple;">Item with purple text</li></ul>
+       - Link: <a href="https://example.com" style="color: blue; text-decoration: underline;">Click me</a>
+       - Table: <table style="border-collapse: collapse; width: 100%;"><tr><th style="border: 1px solid black; padding: 8px;">Header</th></tr><tr><td style="border: 1px solid black; padding: 8px;">Cell</td></tr></table>
+       - Embedded image (attach 'image.jpg' with Content-ID 'image1'): <img src="cid:image1" alt="Logo" style="width: 200px; height: auto;">
+     - Full Example body:
+       """
+       <html>
+         <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+           <div style="background-color: white; padding: 20px; border-radius: 10px;">
+             <h1 style="color: #007bff; font-size: 28px; text-align: center;">Email Title</h1>
+             <p style="font-size: 16px; color: #333;">This is a <strong>bold</strong> and <em>italic</em> paragraph with <span style="color: red; font-weight: bold;">red bold text</span>.</p>
+             <p style="font-size: 24px; color: orange; background-color: yellow; padding: 10px; border: 1px solid orange;">Highlighted big text.</p>
+             <ul style="color: #28a745;">
+               <li>Green list item 1</li>
+               <li>Green list item 2 with <a href="https://google.com" style="color: #007bff;">blue link</a></li>
+             </ul>
+             <table border="1" style="border-collapse: collapse; margin-top: 20px;">
+               <tr><th style="background-color: #007bff; color: white; padding: 10px;">Column 1</th><th style="background-color: #007bff; color: white; padding: 10px;">Column 2</th></tr>
+               <tr><td style="padding: 10px;">Data 1</td><td style="padding: 10px;">Data 2</td></tr>
+             </table>
+           </div>
+         </body>
+       </html>
+       """
+     - Note: Test rendering in target email clients. Avoid complex JS or external resources.
+
+2. get_emails(limit: int = 10, start: int = 0, unread_only: bool = False)
+   - Retrieves recent emails from inbox. For HTML emails, body preview strips tags for text view.
+   - 'limit': Max number of emails to fetch (int, default 10)
+   - 'start': Offset to start from (int, default 0)
+   - 'unread_only': Fetch only unread emails (bool, default False)
+   - Returns: List of dicts with {'id': str, 'subject': str, 'from': str, 'date': str, 'body': str (truncated text preview)}
+
+3. get_unread_count()
+   - Gets the number of unread emails in inbox.
+   - Returns: Integer count or error message.
+
+4. delete_email(email_id: str)
+   - Deletes the email with the given ID.
+   - 'email_id': The email ID from get_emails (str)
+   - Returns: "Email sent successfully" or error message.
+   - WARNING: This permanently deletes the email.
+
+5. search_emails(keywords: list)
+   - Searches emails for the given keywords in body.
+   - 'keywords': List of strings to search for (list of str)
+   - Returns: List of dicts with {'id': str, 'subject': str, 'from': str} (top 10 matches)
+
+6. create_label(label_name: str)
+   - Creates a new Gmail label (placeholder; requires Gmail API for full support).
+   - 'label_name': Name of the label (str)
+   - Returns: Confirmation message.
+
+7. delete_label(label_name: str)
+   - Deletes a Gmail label (placeholder; requires Gmail API for full support).
+   - 'label_name': Name of the label (str)
+   - Returns: Confirmation message.
+
+8. add_label_to_email(email_id: str, label_name: str)
+   - Adds a label to an email (limited IMAP support; sets flag, not true label. Full support needs Gmail API).
+   - 'email_id': The email ID (str)
+   - 'label_name': Name of the label (str)
+   - Returns: Confirmation or error.
+
+Notes:
+- Credentials are loaded from .env (SMTP_USER, SMTP_PASS, etc.).
+- IMAP uses Gmail's server; ensure app password is used for SMTP_PASS.
+- Labels (create/delete/add) have limited functionality without Gmail API integration.
+- For production, add error handling and security.
+- Tested: Sending HTML emails with formatting works; reading/searching/unread count work; deletion untested for safety; labels are placeholders.
+- See README.md for full setup, limitations, and TODOs.
