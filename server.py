@@ -47,7 +47,9 @@ async def send_email(to: str, subject: str, body: str, is_html: bool = False, at
     
     if is_html:
         # Plain text fallback (simple extraction from HTML or placeholder)
-        plain_body = body.replace('<', '').replace('>', ' ').strip()[:500] + '...' if len(body) > 500 else body.replace('<', '').replace('>', ' ').strip()
+        original_body = body
+        body = body.replace('\\n', '<br>').replace('\n', '<br>')
+        plain_body = original_body.replace('<', '').replace('>', ' ').strip()[:500] + '...' if len(original_body) > 500 else original_body.replace('<', '').replace('>', ' ').strip()
         plain_msg = MIMEText(plain_body, 'plain')
         html_msg = MIMEText(body, 'html')
         msg.attach(plain_msg)
@@ -375,7 +377,9 @@ async def forward_email(email_id: str, to: str, custom_subject: str = None, cust
         # Custom prefix
         if custom_body_prefix:
             if is_html:
-                plain_prefix = custom_body_prefix.replace('<', '').replace('>', ' ').strip()
+                original_prefix = custom_body_prefix
+                custom_body_prefix = custom_body_prefix.replace('\\n', '<br>').replace('\n', '<br>')
+                plain_prefix = original_prefix.replace('<', '').replace('>', ' ').strip()
                 forwarded.attach(MIMEText(plain_prefix, 'plain'))
                 forwarded.attach(MIMEText(custom_body_prefix, 'html'))
             else:
@@ -471,7 +475,9 @@ async def reply_to_email(email_id: str, reply_body: str, is_html: bool = False, 
             reply['References'] = f"{original_message['References']} {original_message['Message-ID']}"
         
         if is_html:
-            plain_body = reply_body.replace('<', '').replace('>', ' ').strip()
+            original_body = reply_body
+            reply_body = reply_body.replace('\\n', '<br>').replace('\n', '<br>')
+            plain_body = original_body.replace('<', '').replace('>', ' ').strip()
             reply.attach(MIMEText(plain_body, 'plain'))
             reply.attach(MIMEText(reply_body, 'html'))
         else:
